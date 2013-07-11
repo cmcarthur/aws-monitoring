@@ -27,7 +27,12 @@ class AWSDataGrabber
 						instance_meta[:farm] = tag_value
 					elsif tag_name == "Name"
 						instance_meta[:number] = tag_value.split.last
+						instance_meta[:fullname] = tag_value
 					end
+				end
+
+				if instance_meta[:role] and instance_meta[:farm] and instance_meta[:number]
+					instance_meta[:fullname] = "#{instance_meta[:farm]}: #{instance_meta[:role]} #{instance_meta[:number]}"
 				end
 
 				metadata.push(instance_meta)
