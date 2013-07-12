@@ -19,6 +19,11 @@ bundle install
 ruby app.rb
 ```
 
+### Current Issues
+
+* Some charts don't load for some reason
+* Something is wrong with tooltips
+
 ### Todo in future iterations
 
 * Add support for ELB
