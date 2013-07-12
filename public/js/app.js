@@ -32,24 +32,112 @@ angular
 		return toReturn;
 	}]);
 
-function AwsDashboardController(scope, localApiService) {
+function AwsDashboardController(scope, localApiService, timeout) {
 	scope.showOverview = true;
 	scope.instances = [];
-
-	scope.fetchInstanceReports = function(instances) {
-		var metric_list = [
+	scope.metric_list = [
 			{
 				'name': 'Average CPU Utilization',
 				'endpoint': 'average_cpu',
 				'operation': 'average'
-			}
+			},
+			{
+				'name': 'Maximum CPU Utilization',
+				'endpoint': 'maximum_cpu',
+				'operation': 'maximum'
+			},
+			{
+				'name': 'Network in',
+				'endpoint': 'network_in',
+				'operation': 'sum'
+			},
+			{
+				'name': 'Network out',
+				'endpoint': 'network_out',
+				'operation': 'sum'
+			},
 		]
 
+	scope.getMetricByEndpoint = function(instance, endpoint) {
+		for (var i = instance.metrics.length - 1; i >= 0; i--) {
+			if(instance.metrics[i].endpoint == endpoint)
+				return instance.metrics[i];
+		};
+
+		console.error("No metric for endpoint " + endpoint);
+	}
+
+	scope.getInstanceById = function(id) {
+		for (var i = scope.instances.length - 1; i >= 0; i--) {
+			if(scope.instances[i].id == id)
+				return scope.instances[i];
+		};
+
+		console.error("No instance for id " + id);
+	}
+
+	scope.buildSeriesFromMetric = function(metric) {
+		var to_return = [];
+
+		for (var i = metric.values.length - 1; i >= 0; i--) {
+			var value = metric.values[i];
+			if(metric.endpoint == 'network_out' || metric.endpoint == 'network_in')
+				to_return.push([(value['time']*1000), (value[metric.operation]/1000)]);
+			else
+				to_return.push([(value['time']*1000), value[metric.operation]]);
+		};
+
+		return to_return;
+	}
+
+	scope.populateChart = function(instance_id, endpoint) {
+		var instance = scope.getInstanceById(instance_id);
+		var metric = scope.getMetricByEndpoint(instance, endpoint);
+
+		timeout(function() {
+			$('.'+instance_id+'.'+endpoint).highcharts({
+				chart: {
+					type: 'line'
+				},
+				title: {
+					text: metric.name
+				},
+				xAxis: {
+					type: 'datetime'
+				},
+				yAxis: {
+					title: { enabled: false },
+					min: 0,
+					labels: {
+						formatter: function() {
+							var unit = '';
+							switch(metric.values[0]['unit']) {
+								case 'Percent':
+									unit = '%';
+									break;
+								default:
+									break;
+							}
+
+							if(metric.endpoint == 'network_out' || metric.endpoint == 'network_in')
+								unit = 'K';
+
+							return this.value + unit;
+						}
+					}
+				},
+				series: [{ name: 'data', data: scope.buildSeriesFromMetric(metric) }],
+				plotOptions: { line: { marker: { enabled: false } } },
+				legend: { enabled: false }
+			});
+		});
+	}
+
+	scope.fetchInstanceReports = function(instances) {
 		angular.forEach(instances, function(instance) {
 			instance.metrics = [];
-			instance.metrics.values = [];
 
-			angular.forEach(metric_list, function(metric) {
+			angular.forEach(scope.metric_list, function(metric, index) {
 				localApiService.getInstanceMetric(instance.id, metric.endpoint).then(
 					function(success_result) {
 						var new_metric = {
@@ -59,7 +147,7 @@ function AwsDashboardController(scope, localApiService) {
 							values: success_result
 						}
 
-						instance.metrics.push(new_metric);
+						instance.metrics[index] = new_metric;
 					}, function(error_result) {
 						console.error(error_result);
 					});
@@ -80,4 +168,4 @@ function AwsDashboardController(scope, localApiService) {
 
 }
 
-AwsDashboardController.$inject = ['$scope', 'localApiService'];
+AwsDashboardController.$inject = ['$scope', 'localApiService', '$timeout'];

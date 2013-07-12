@@ -10,41 +10,17 @@
 </head>
 <body>
 	<div ng-controller="AwsDashboardController" class="tabbable tabs-left">
-		<ul>
-			<li ng-repeat="instance in instances">
-				{{instance.fullname}}
-				<div ng-repeat="metric in instance.metrics">
-					<script>
-						$().parent("div").highcharts({
-							chart: {
-								type: 'bar'
-							},
-							title: {
-								text: 'Fruit Consumption'
-							},
-							xAxis: {
-								categories: ['Apples', 'Bananas', 'Oranges']
-							},
-							yAxis: {
-								title: {
-									text: 'Fruit eaten'
-								}
-							},
-							series: [{
-								name: 'Jane',
-								data: [1, 0, 4]
-							}, {
-								name: 'John',
-								data: [5, 7, 3]
-							}]
-						});
-					</script>
-				</div>
-			</li>
-		</ul>
+		<div ng-repeat="instance in instances | orderBy:'fullname':false">
+			<h4>{{instance.fullname}}</h4>
+			<div ng-repeat="metric in instance.metrics">
+				<div class="{{instance.id}} {{metric.endpoint}}" ng-init="populateChart(instance.id, metric.endpoint);" style="height: 300px; width: 400px; float:left;"></div>
+			</div>
+			<div style="clear:both"></div>
+		</div>
 	</div>
 
 	<script src="lib/angular/angular.js"></script>
 	<script src="js/app.js"></script>
+	<script src="js/themes/custom.js"></script>
 </body>
 </html>

@@ -1,4 +1,5 @@
 require 'aws-sdk'
+require 'time'
 
 class AWSDataGrabber
 	def initialize(config)
@@ -103,7 +104,7 @@ class AWSDataGrabber
 	def get_instance_metrics(instance_id, history_in_seconds, metric_name, statistic_name)
 		cw = AWS::CloudWatch.new(@config)
 
-		return cw.client.get_metric_statistics(
+		data = cw.client.get_metric_statistics(
 			namespace: 'AWS/EC2',
 			metric_name: metric_name,
 			statistics: [ statistic_name ],
@@ -113,7 +114,13 @@ class AWSDataGrabber
 			dimensions: [
 				{ :name => "InstanceId", :value => instance_id }
 			]
-		).datapoints
+		).datapoints.map do |item|
+			to_return = item.to_hash
+			to_return[:time] = to_return[:timestamp].to_i
+			to_return
+		end
+
+		return data.sort_by { |hsh| hsh[:time] }
 	end
 
 	def get_elb_metrics(elb_name, history_in_seconds, metric_name, statistic_name)

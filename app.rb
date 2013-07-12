@@ -1,6 +1,9 @@
 require 'sinatra'
 require 'json'
 
+set :port, 4567
+set :bind, '172.16.10.119'
+
 require './aws/AWSDataGrabber.rb'
 
 aws = AWSDataGrabber.new(YAML.load_file('./config.yml'))
@@ -24,14 +27,14 @@ get '/api/instance/:id/maximum_cpu/:hours.json' do |id, hours|
 	aws.get_max_cpu(id, hours.to_i * 60 * 60).to_a.to_json
 end
 
-get '/api/instance/:id/network/in/:hours.json' do |id, hours|
+get '/api/instance/:id/network_in/:hours.json' do |id, hours|
 	content_type :json
-	aws.get_network_in_cpu(id, hours.to_i * 60 * 60).to_a.to_json
+	aws.get_network_in(id, hours.to_i * 60 * 60).to_a.to_json
 end
 
-get '/api/instance/:id/network/out/:hours.json' do |id, hours|
+get '/api/instance/:id/network_out/:hours.json' do |id, hours|
 	content_type :json
-	aws.get_network_out_cpu(id, hours.to_i * 60 * 60).to_a.to_json
+	aws.get_network_out(id, hours.to_i * 60 * 60).to_a.to_json
 end
 
 get '/api/balancer/:id/healthy.json' do |id|
